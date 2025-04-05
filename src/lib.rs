@@ -1,5 +1,6 @@
+use std::io;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Child, Command, Output};
 use crate::port::PortIdentifier;
 use crate::stm32wb::Stm32wbCommands;
 use crate::verbosity::Verbosity;
@@ -14,6 +15,33 @@ pub struct Stm32ProgrammerBuilder {
     connect: Option<PortIdentifier>,
     verbosity: Option<Verbosity>,
     stm32wb_commands: Option<Stm32wbCommands>
+}
+
+impl Stm32ProgrammerBuilder {
+    pub fn connect(mut self, port: PortIdentifier) -> Self {
+        self.connect = Some(port);
+        self
+    }
+
+    pub fn verbosity(mut self, verbosity: Verbosity) -> Self {
+        self.verbosity = Some(verbosity);
+        self
+    }
+
+    pub fn stm32wb_commands(mut self, commands: Stm32wbCommands) -> Self {
+        self.stm32wb_commands = Some(commands);
+        self
+    }
+
+    pub fn spawn(self) -> io::Result<Child>  {
+        let mut cmd: Command = self.into();
+        cmd.spawn()
+    }
+
+    pub fn output(self) -> io::Result<Output>{
+        let mut cmd: Command = self.into();
+        cmd.output()
+    }
 }
 
 impl Default for Stm32ProgrammerBuilder {
