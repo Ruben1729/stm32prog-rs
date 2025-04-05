@@ -13,17 +13,22 @@ pub mod spi;
 pub mod uart;
 pub mod usb;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub enum PortIdentifier {
     PortName(String),
     Can(CanPortBuilder),
     I2c(I2cPortBuilder),
     Jtag(JtagSwdPortBuilder),
-    #[default]
     Swd(JtagSwdPortBuilder),
     Spi(SpiPortBuilder),
     Uart(UartPortBuilder),
     Usb(UsbPortBuilder),
+}
+
+impl Default for PortIdentifier {
+    fn default() -> PortIdentifier {
+        PortIdentifier::Swd(JtagSwdPortBuilder::default())
+    }
 }
 
 impl From<PortIdentifier> for Command {
@@ -34,13 +39,31 @@ impl From<PortIdentifier> for Command {
             PortIdentifier::PortName(name) => {
                 cmd.arg(format!("port={name}"));
             }
-            PortIdentifier::Can(_) => {}
-            PortIdentifier::I2c(_) => {}
-            PortIdentifier::Jtag(_) => {}
-            PortIdentifier::Swd(_) => {}
-            PortIdentifier::Spi(_) => {}
-            PortIdentifier::Uart(_) => {}
-            PortIdentifier::Usb(_) => {}
+            PortIdentifier::Can(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
+            PortIdentifier::I2c(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
+            PortIdentifier::Jtag(port_builder)|
+            PortIdentifier::Swd(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
+            PortIdentifier::Spi(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
+            PortIdentifier::Uart(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
+            PortIdentifier::Usb(port_builder) => {
+                let port_cmd: Command = port_builder.into();
+                cmd.args(port_cmd.get_args());
+            }
         }
 
         cmd

@@ -1,3 +1,4 @@
+use std::process::Command;
 
 #[derive(Debug, Default)]
 pub struct UartPortBuilder {
@@ -12,9 +13,8 @@ pub struct UartPortBuilder {
     console: Option<String>,
 }
 
-impl UartPortBuilder {
-    pub fn new() -> UartPortBuilder {
-        UartPortBuilder::default()
+impl From<UartPortBuilder> for Command {
+    fn from(_value: UartPortBuilder) -> Self {
+        Command::new("")
     }
-
 }

@@ -1,3 +1,5 @@
+use std::process::Command;
+
 #[derive(Debug, Default)]
 pub struct I2cPortBuilder {
     address: String,
@@ -10,4 +12,10 @@ pub struct I2cPortBuilder {
     rise_time: Option<String>,
     fall_time: Option<String>,
     no_init: bool
+}
+
+impl From<I2cPortBuilder> for Command {
+    fn from(_value: I2cPortBuilder) -> Self {
+        Command::new("")
+    }
 }

@@ -1,3 +1,4 @@
+use std::process::Command;
 
 #[derive(Debug, Default)]
 pub struct UsbPortBuilder {
@@ -23,5 +24,11 @@ impl UsbPortBuilder {
     pub fn vendor_id(mut self, vid: &str) -> Self {
         self.vendor_id = Some(vid.to_string());
         self
+    }
+}
+
+impl From<UsbPortBuilder> for Command {
+    fn from(_value: UsbPortBuilder) -> Self {
+        Command::new("")
     }
 }

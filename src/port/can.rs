@@ -1,3 +1,4 @@
+use std::process::Command;
 
 #[derive(Default, Debug)]
 pub struct CanPortBuilder {
@@ -11,4 +12,10 @@ pub struct CanPortBuilder {
     filter_activation: Option<String>,
     filter_bank_number: Option<String>,
     no_init: bool,
+}
+
+impl From<CanPortBuilder> for Command {
+    fn from(_value: CanPortBuilder) -> Self {
+        Command::new("")
+    }
 }

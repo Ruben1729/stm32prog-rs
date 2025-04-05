@@ -1,3 +1,5 @@
+use std::process::Command;
+
 #[derive(Debug, Default)]
 pub struct SpiPortBuilder {
     baudrate: Option<String>,
@@ -14,4 +16,10 @@ pub struct SpiPortBuilder {
     nss_pulse: Option<String>,
     delay: Option<String>,
     no_init: bool,
+}
+
+impl From<SpiPortBuilder> for Command {
+    fn from(_value: SpiPortBuilder) -> Self {
+        Command::new("")
+    }
 }

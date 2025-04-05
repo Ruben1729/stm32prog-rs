@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use std::process::Command;
 
 #[derive(Debug, Default)]
@@ -10,7 +11,7 @@ pub struct JtagSwdPortBuilder {
     pub reset: Option<JtagSwdResetMode>,
     pub shared: bool,
     pub tcp_port: Option<String>,
-    pub lpm: JtagSwdLowPower,
+    pub lpm: Option<JtagSwdLowPower>,
     pub get_auth_id: bool,
     pub speed: Option<String>
 }
@@ -36,25 +37,34 @@ impl From<JtagSwdPortBuilder> for Command {
         }
 
         if let Some(mode) = value.mode {
-            cmd.arg(format!("mode={}", mode.to_cli_string()));
+            cmd.arg(format!("mode={}", mode));
         }
 
         if let Some(reset) = value.reset {
-            cmd.arg(format!("reset={}", reset.to_cli_string()));
+            cmd.arg(format!("reset={}", reset));
         }
 
         if value.shared {
-            cmd.arg("shared=true");
+            cmd.arg("shared");
         }
 
         if let Some(port) = value.tcp_port {
             cmd.arg(format!("tcpport={port}"));
         }
 
-        cmd.arg(format!("lpm={}", value.lpm.to_cli_string()));
+        if let Some(lpm) = value.lpm {
+            match lpm {
+                JtagSwdLowPower::Enabled => {
+                    cmd.arg("LPM");
+                }
+                JtagSwdLowPower::Disabled => {
+                    cmd.arg("dLPM");
+                }
+            }
+        }
 
         if value.get_auth_id {
-            cmd.arg("getauthid=true");
+            cmd.arg("getAuthId");
         }
 
         if let Some(speed) = value.speed {
@@ -65,89 +75,24 @@ impl From<JtagSwdPortBuilder> for Command {
     }
 }
 
-impl From<Command> for JtagSwdPortBuilder {
-    fn from(cmd: Command) -> Self {
-        let mut builder = JtagSwdPortBuilder::default();
-
-        // Collect args from command
-        let args: Vec<String> = cmd.get_args()
-            .map(|arg| arg.to_string_lossy().to_string())
-            .collect();
-
-        for arg in args {
-            if let Some((key, value)) = arg.split_once('=') {
-                match key.to_lowercase().as_str() {
-                    "freq" | "frequency" => {
-                        if let Ok(freq) = value.parse::<usize>() {
-                            builder.frequency = Some(freq);
-                        }
-                    },
-                    "index" => {
-                        if let Ok(idx) = value.parse::<usize>() {
-                            builder.index = Some(idx);
-                        }
-                    },
-                    "sn" => {
-                        builder.serial_number = Some(value.to_string());
-                    },
-                    "ap" => {
-                        builder.access_port = Some(value.to_string());
-                    },
-                    "mode" => {
-                        builder.mode = Some(JtagSwdMode::from_cli_string(value));
-                    },
-                    "reset" => {
-                        builder.reset = Some(JtagSwdResetMode::from_cli_string(value));
-                    },
-                    "shared" => {
-                        builder.shared = value.to_lowercase() == "true";
-                    },
-                    "tcpport" => {
-                        builder.tcp_port = Some(value.to_string());
-                    },
-                    "lpm" => {
-                        builder.lpm = JtagSwdLowPower::from_cli_string(value);
-                    },
-                    "getauthid" => {
-                        builder.get_auth_id = value.to_lowercase() == "true";
-                    },
-                    "speed" => {
-                        builder.speed = Some(value.to_string());
-                    },
-                    _ => {}
-                }
-            }
-        }
-
-        builder
-    }
-}
-
 #[derive(Debug, Default)]
 pub enum JtagSwdMode {
     Ur,
     HotPlug,
     #[default]
     Normal,
-    PowerDown
+    PowerDown,
+    HardwareResetPulse
 }
 
-impl JtagSwdMode {
-    pub fn to_cli_string(&self) -> String {
+impl Display for JtagSwdMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            JtagSwdMode::Ur => "UR".to_string(),
-            JtagSwdMode::HotPlug => "HotPlug".to_string(),
-            JtagSwdMode::Normal => "Normal".to_string(),
-            JtagSwdMode::PowerDown => "PowerDown".to_string(),
-        }
-    }
-
-    pub fn from_cli_string(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "ur" => JtagSwdMode::Ur,
-            "hotplug" => JtagSwdMode::HotPlug,
-            "powerdown" => JtagSwdMode::PowerDown,
-            _ => JtagSwdMode::Normal,
+            JtagSwdMode::Ur => {"UR".fmt(f)}
+            JtagSwdMode::HotPlug => {"HOTPLUG".fmt(f)}
+            JtagSwdMode::Normal => {"NORMAL".fmt(f)}
+            JtagSwdMode::PowerDown => {"POWERDOWN".fmt(f)}
+            JtagSwdMode::HardwareResetPulse => {"HWRSTPULSE".fmt(f)}
         }
     }
 }
@@ -160,20 +105,12 @@ pub enum JtagSwdResetMode {
     ChipReset
 }
 
-impl JtagSwdResetMode {
-    pub fn to_cli_string(&self) -> String {
+impl Display for JtagSwdResetMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            JtagSwdResetMode::SoftwareReset => "Software".to_string(),
-            JtagSwdResetMode::HardwareReset => "Hardware".to_string(),
-            JtagSwdResetMode::ChipReset => "Chip".to_string(),
-        }
-    }
-
-    pub fn from_cli_string(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "hardware" => JtagSwdResetMode::HardwareReset,
-            "chip" => JtagSwdResetMode::ChipReset,
-            _ => JtagSwdResetMode::SoftwareReset,
+            JtagSwdResetMode::SoftwareReset => {"SWrst".fmt(f)}
+            JtagSwdResetMode::HardwareReset => {"HWrst".fmt(f)}
+            JtagSwdResetMode::ChipReset => {"Crst".fmt(f)}
         }
     }
 }
@@ -185,22 +122,6 @@ pub enum JtagSwdLowPower {
     Disabled
 }
 
-impl JtagSwdLowPower {
-    pub fn to_cli_string(&self) -> String {
-        match self {
-            JtagSwdLowPower::Enabled => "true".to_string(),
-            JtagSwdLowPower::Disabled => "false".to_string(),
-        }
-    }
-
-    pub fn from_cli_string(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "false" | "0" | "no" | "disabled" => JtagSwdLowPower::Disabled,
-            _ => JtagSwdLowPower::Enabled,
-        }
-    }
-}
-
 #[derive(Debug, Default)]
 pub enum JtagSwdSpeed {
     #[default]
@@ -208,18 +129,11 @@ pub enum JtagSwdSpeed {
     Fast
 }
 
-impl JtagSwdSpeed {
-    pub fn to_cli_string(&self) -> String {
+impl Display for JtagSwdSpeed {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            JtagSwdSpeed::Reliable => "Reliable".to_string(),
-            JtagSwdSpeed::Fast => "Fast".to_string(),
-        }
-    }
-
-    pub fn from_cli_string(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "fast" => JtagSwdSpeed::Fast,
-            _ => JtagSwdSpeed::Reliable,
+            JtagSwdSpeed::Reliable => {"Reliable".fmt(f)}
+            JtagSwdSpeed::Fast => {"fast".fmt(f)}
         }
     }
 }
